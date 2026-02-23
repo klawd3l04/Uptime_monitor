@@ -1,0 +1,55 @@
+name: Uptime Monitor CI/CD
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8
+          # Install dependencies for each service if requirements.txt exists
+          find . -name "requirements.txt" -exec pip install -r {} \;
+      - name: Lint with flake8
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+  test-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ui_service/client/package-lock.json
+      - name: Install dependencies & Build
+        run: |
+          cd ui_service/client
+          npm install
+          npm run build
+
+  build-docker:
+    needs: [test-python, test-frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build User Service
+        run: docker build -t uptime-monitor-user_service:latest ./user_service
+      - name: Build Pinger Service
+        run: docker build -t uptime-monitor-pinger_service:latest ./pinger_service
+      - name: Build UI Service
+        run: docker build -t uptime-monitor-ui_service:latest ./ui_service

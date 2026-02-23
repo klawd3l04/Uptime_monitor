@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ui-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ui-service
+  template:
+    metadata:
+      labels:
+        app: ui-service
+    spec:
+      containers:
+        - name: ui-service
+          image: uptime-monitor-ui_service:v1.5.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /health # Note: Adding a simple health endpoint to node server
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 30
+          env:
+            - name: REDIS_HOST
+              value: "redis"
+            - name: USER_SERVICE_URL
+              value: "http://user_service:5000"
+            - name: INTERNAL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: uptime-secrets
+                  key: INTERNAL_API_KEY
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ui-service
+spec:
+  selector:
+    app: ui-service
+  ports:
+    - port: 8080
+      targetPort: 3000

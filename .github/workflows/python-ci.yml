@@ -1,0 +1,31 @@
+name: Build & Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test-user-service:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+    - name: Install dependencies
+      run: |
+        cd user_service
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Run tests with pytest
+      env:
+        SECRET_KEY: test-key-ci
+        INTERNAL_API_KEY: test-internal-ci
+      # Using 'python -m pytest' adds the current directory to sys.path, 
+      # resolving the ModuleNotFoundError for 'app'.
+      run: |
+        cd user_service
+        python -m pytest tests/

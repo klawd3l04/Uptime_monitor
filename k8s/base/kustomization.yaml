@@ -1,0 +1,10 @@
+resources:
+  - postgres.yaml
+  - redis.yaml
+  - kafka.yaml
+  - user-service.yaml
+  - pinger-service.yaml
+  - processor-service.yaml
+  - alert-service.yaml
+  - ui-service.yaml
+  - secrets.yaml

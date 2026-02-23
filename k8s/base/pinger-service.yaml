@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pinger-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pinger-service
+  template:
+    metadata:
+      labels:
+        app: pinger-service
+    spec:
+      containers:
+        - name: pinger-service
+          image: uptime-monitor-pinger_service:v1.5.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          env:
+            - name: KAFKA_BROKER
+              value: "kafka:9092"
+            - name: REDIS_HOST
+              value: "redis"
+            - name: USER_SERVICE_URL
+              value: "http://user_service:5000"
+            - name: INTERNAL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: uptime-secrets
+                  key: INTERNAL_API_KEY
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pinger-service
+spec:
+  selector:
+    app: pinger-service
+  ports:
+    - port: 8000
+      targetPort: 8000
